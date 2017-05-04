@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"syscall"
-	"time"
 )
 
 // Lock tries to obtain an exclude lock on a lockfile and exits the program if an error occurs
@@ -48,19 +47,4 @@ func (s *Single) Unlock() error {
 	}
 
 	return nil
-}
-
-// Wait until the lock is released
-func (s *Single) Wait() {
-	locked := true
-	for locked {
-		time.Sleep(time.Millisecond)
-
-		err := s.Lock()
-		locked = err != nil
-
-		if err == nil {
-			s.Unlock()
-		}
-	}
 }

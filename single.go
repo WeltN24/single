@@ -5,6 +5,7 @@ package single
 import (
 	"errors"
 	"os"
+	"time"
 )
 
 var (
@@ -24,4 +25,19 @@ type Single struct {
 // New creates a Single instance
 func New(name string) *Single {
 	return &Single{name: name, Locked: false}
+}
+
+// Wait until the lock is released
+func (s *Single) Wait() {
+	locked := true
+	for locked {
+		time.Sleep(time.Millisecond)
+
+		err := s.Lock()
+		locked = err != nil
+
+		if err == nil {
+			s.Unlock()
+		}
+	}
 }
