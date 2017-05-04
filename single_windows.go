@@ -4,7 +4,6 @@ package single
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -20,25 +19,29 @@ func (s *Single) Filename() string {
 // Lock tries to remove the lock file, if it exists.
 // If the file is already open by another instance of the program,
 // remove will fail and exit the program.
-func (s *Single) Lock() {
+func (s *Single) Lock() error {
 
 	if err := os.Remove(s.Filename()); err != nil && !os.IsNotExist(err) {
-		log.Fatal(ErrAlreadyRunning)
+		return ErrAlreadyRunning
 	}
 
 	file, err := os.OpenFile(s.Filename(), os.O_EXCL|os.O_CREATE, 0600)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	s.file = file
+
+	return nil
 }
 
 // Unlock closes and removes the lockfile.
-func (s *Single) Unlock() {
+func (s *Single) Unlock() error {
 	if err := s.file.Close(); err != nil {
-		log.Print(err)
+		return err
 	}
 	if err := os.Remove(s.Filename()); err != nil {
-		log.Print(err)
+		return err
 	}
+
+	return nil
 }

@@ -6,10 +6,11 @@ import (
 	"log"
 	"os"
 	"syscall"
+	"time"
 )
 
 // Lock tries to obtain an exclude lock on a lockfile and exits the program if an error occurs
-func (s *Single) Lock() {
+func (s *Single) Lock() error {
 	// open/create lock file
 	f, err := os.OpenFile(s.Filename(), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
@@ -23,24 +24,43 @@ func (s *Single) Lock() {
 	}
 	// try to obtain an exclusive lock - FcntlFlock seems to be the portable *ix way
 	if err := syscall.FcntlFlock(s.file.Fd(), syscall.F_SETLK, &flock); err != nil {
-		log.Fatal(ErrAlreadyRunning)
+		return ErrAlreadyRunning
 	}
+
+	return nil
 }
 
 // Unlock releases the lock, closes and removes the lockfile. All errors will be reported directly.
-func (s *Single) Unlock() {
+func (s *Single) Unlock() error {
 	// set the lock type to F_UNLCK
 	flock := syscall.Flock_t{
 		Type: syscall.F_UNLCK,
 		Pid:  int32(os.Getpid()),
 	}
 	if err := syscall.FcntlFlock(s.file.Fd(), syscall.F_SETLK, &flock); err != nil {
-		log.Print(err)
+		return err
 	}
 	if err := s.file.Close(); err != nil {
-		log.Print(err)
+		return err
 	}
 	if err := os.Remove(s.Filename()); err != nil {
-		log.Print(err)
+		return err
+	}
+
+	return nil
+}
+
+// Wait until the lock is released
+func (s *Single) Wait() {
+	locked := true
+	for locked {
+		time.Sleep(time.Millisecond)
+
+		err := s.Lock()
+		locked = err != nil
+
+		if err == nil {
+			s.Unlock()
+		}
 	}
 }

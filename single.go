@@ -16,11 +16,12 @@ var (
 
 // Single represents the name and the open file descriptor
 type Single struct {
-	name string
-	file *os.File
+	name   string
+	file   *os.File
+	Locked bool
 }
 
 // New creates a Single instance
 func New(name string) *Single {
-	return &Single{name: name}
+	return &Single{name: name, Locked: false}
 }
